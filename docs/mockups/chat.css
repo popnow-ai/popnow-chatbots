@@ -1,0 +1,49 @@
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1280px;height:760px;display:grid;grid-template-columns:1fr 1fr;font:15px/1.375 "gg sans","Noto Sans",system-ui,-apple-system,"Segoe UI",sans-serif;background:#1e1f22}
+.dc{background:#313338;color:#dbdee1;display:flex;flex-direction:column}
+.dc .bar{height:48px;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid #26272b;color:#f2f3f5;font-weight:600}
+.dc .bar i{font-style:normal;color:#80848e;font-size:22px;font-weight:400}
+.dc .feed{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:16px 0 20px}
+.msg{display:grid;grid-template-columns:40px 1fr;column-gap:16px;padding:2px 16px 6px}
+.ava{width:40px;height:40px;border-radius:50%;background:#fff center/86% no-repeat url(icon.webp)}
+.ava.me{background:#c9a27e;display:grid;place-items:center;color:#fff;font-weight:700}
+.who{display:flex;align-items:baseline;gap:6px}
+.who b{color:#f2f3f5;font-weight:600}
+.who small{color:#949ba4;font-size:12px}
+.tag{background:#5865f2;color:#fff;font-size:10px;font-weight:600;border-radius:3px;padding:0 4px;line-height:15px}
+.used{grid-column:2;font-size:13px;color:#949ba4;display:flex;gap:4px;align-items:center;margin-bottom:2px}
+.used b{color:#c9cdfb;font-weight:500}
+.embed{margin-top:6px;max-width:440px;background:#2b2d31;border-left:4px solid #E65A2F;border-radius:4px;padding:10px 16px 14px}
+.embed h4{color:#f2f3f5;font-size:16px;margin-bottom:6px}
+.embed blockquote{border-left:4px solid #4e5058;padding-left:10px;color:#dbdee1;font-size:14px}
+.embed p{font-size:14px;margin-top:6px}
+.btns{display:flex;gap:8px;margin-top:8px}
+.btn{height:32px;padding:0 16px;border-radius:3px;font-size:14px;font-weight:500;display:inline-flex;align-items:center;color:#fff}
+.btn.pri{background:#5865f2}.btn.sec{background:#4e5058}
+.mention{background:rgba(88,101,242,.3);color:#c9cdfb;border-radius:3px;padding:0 2px}
+.att{margin-top:6px;width:420px;border-radius:8px;overflow:hidden}
+.att img{display:block;width:100%}
+.sl{background:#fff;color:#1d1c1d;display:flex;flex-direction:column;font-family:Lato,"Slack-Lato",system-ui,-apple-system,"Segoe UI",sans-serif}
+.sl .bar{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid #e2e2e2;font-weight:900;font-size:17px}
+.sl .bar span{font-weight:400;color:#616061;font-size:13px}
+.sl .feed{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:12px 0 20px}
+.sm{display:grid;grid-template-columns:36px 1fr;column-gap:8px;padding:8px 20px}
+.sm .ava{width:36px;height:36px;border-radius:6px}
+.sm .ava.me{border-radius:6px;background:#9b6a4a}
+.sm .who b{color:#1d1c1d;font-weight:900}
+.sm .who small{color:#616061}
+.app{background:#e8e8e8;color:#616061;font-size:10px;font-weight:700;border-radius:2px;padding:0 3px;line-height:14px}
+.sm .text{font-size:15px}
+.smention{background:#e8f5fa;color:#1264a3;border-radius:3px;padding:0 2px}
+.attach{display:grid;grid-template-columns:4px 1fr;gap:12px;margin-top:4px;max-width:470px}
+.attach .edge{background:#E65A2F;border-radius:8px}
+.attach blockquote{border-left:4px solid #ddd;padding-left:10px;color:#1d1c1d}
+.attach p{margin-top:2px}
+.sbtns{display:flex;gap:8px;margin-top:10px}
+.sbtn{height:28px;padding:0 12px;border-radius:4px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;border:1px solid rgba(29,28,29,.3);color:#1d1c1d;background:#fff}
+.sbtn.pri{background:#007a5a;border-color:#007a5a;color:#fff}
+.divider{display:flex;align-items:center;gap:10px;color:#616061;font-size:13px;padding:6px 20px}
+.divider:after{content:"";flex:1;height:1px;background:#e2e2e2}
+.file{margin-top:6px;width:400px;border:1px solid #e2e2e2;border-radius:8px;overflow:hidden}
+.file img{display:block;width:100%}
+.file div{font-size:13px;color:#616061;padding:6px 10px}

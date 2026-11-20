@@ -1,0 +1,266 @@
+[
+  {
+    "name": "popnow",
+    "description": "Make images and videos with your PopNow credits",
+    "type": 1,
+    "integration_types": [
+      0,
+      1
+    ],
+    "contexts": [
+      0,
+      1,
+      2
+    ],
+    "options": [
+      {
+        "name": "image",
+        "description": "Create an image",
+        "type": 1,
+        "options": [
+          {
+            "name": "prompt",
+            "description": "What you want to see",
+            "type": 3,
+            "required": true,
+            "max_length": 1500
+          },
+          {
+            "name": "aspect",
+            "description": "Shape",
+            "type": 3,
+            "required": false,
+            "choices": [
+              {
+                "name": "Square 1:1",
+                "value": "1:1"
+              },
+              {
+                "name": "Wide 16:9",
+                "value": "16:9"
+              },
+              {
+                "name": "Phone 9:16",
+                "value": "9:16"
+              },
+              {
+                "name": "Portrait 4:5",
+                "value": "4:5"
+              },
+              {
+                "name": "Classic 3:4",
+                "value": "3:4"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "video",
+        "description": "Create a video",
+        "type": 1,
+        "options": [
+          {
+            "name": "prompt",
+            "description": "What you want to see",
+            "type": 3,
+            "required": true,
+            "max_length": 1500
+          },
+          {
+            "name": "image",
+            "description": "Starting photo",
+            "type": 11,
+            "required": false
+          },
+          {
+            "name": "seconds",
+            "description": "Length",
+            "type": 4,
+            "required": false,
+            "choices": [
+              {
+                "name": "5 seconds",
+                "value": 5
+              },
+              {
+                "name": "10 seconds",
+                "value": 10
+              }
+            ]
+          },
+          {
+            "name": "aspect",
+            "description": "Shape",
+            "type": 3,
+            "required": false,
+            "choices": [
+              {
+                "name": "Wide 16:9",
+                "value": "16:9"
+              },
+              {
+                "name": "Phone 9:16",
+                "value": "9:16"
+              },
+              {
+                "name": "Square 1:1",
+                "value": "1:1"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "edit",
+        "description": "Edit a photo with words",
+        "type": 1,
+        "options": [
+          {
+            "name": "image",
+            "description": "Photo",
+            "type": 11,
+            "required": true
+          },
+          {
+            "name": "prompt",
+            "description": "What to change",
+            "type": 3,
+            "required": true,
+            "max_length": 1500
+          }
+        ]
+      },
+      {
+        "name": "animate",
+        "description": "Turn a photo into a video",
+        "type": 1,
+        "options": [
+          {
+            "name": "image",
+            "description": "Photo",
+            "type": 11,
+            "required": true
+          },
+          {
+            "name": "prompt",
+            "description": "How it moves",
+            "type": 3,
+            "required": false,
+            "max_length": 1500
+          },
+          {
+            "name": "seconds",
+            "description": "Length",
+            "type": 4,
+            "required": false,
+            "choices": [
+              {
+                "name": "5 seconds",
+                "value": 5
+              },
+              {
+                "name": "10 seconds",
+                "value": 10
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "effect",
+        "description": "Apply an effect to a photo",
+        "type": 1,
+        "options": [
+          {
+            "name": "effect",
+            "description": "Effect",
+            "type": 3,
+            "required": true,
+            "autocomplete": true
+          },
+          {
+            "name": "image",
+            "description": "Photo",
+            "type": 11,
+            "required": true
+          }
+        ]
+      },
+      {
+        "name": "remove-bg",
+        "description": "Remove the background",
+        "type": 1,
+        "options": [
+          {
+            "name": "image",
+            "description": "Photo",
+            "type": 11,
+            "required": true
+          }
+        ]
+      },
+      {
+        "name": "upscale",
+        "description": "Upscale a photo or video",
+        "type": 1,
+        "options": [
+          {
+            "name": "file",
+            "description": "Photo or video",
+            "type": 11,
+            "required": true
+          },
+          {
+            "name": "size",
+            "description": "Size",
+            "type": 3,
+            "required": false,
+            "choices": [
+              {
+                "name": "2k",
+                "value": "2k"
+              },
+              {
+                "name": "4k",
+                "value": "4k"
+              },
+              {
+                "name": "8k",
+                "value": "8k"
+              },
+              {
+                "name": "720p",
+                "value": "720p"
+              },
+              {
+                "name": "1080p",
+                "value": "1080p"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "balance",
+        "description": "Your credits",
+        "type": 1
+      },
+      {
+        "name": "creations",
+        "description": "Your latest creations",
+        "type": 1
+      },
+      {
+        "name": "login",
+        "description": "Connect your PopNow account",
+        "type": 1
+      },
+      {
+        "name": "logout",
+        "description": "Disconnect your PopNow account",
+        "type": 1
+      }
+    ]
+  }
+]

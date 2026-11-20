@@ -1,0 +1,42 @@
+# Slack app manifest. Create the app at https://api.slack.com/apps → From a manifest, paste this.
+# Replace bots.popnow.ai if the Worker runs elsewhere.
+display_information:
+  name: PopNow
+  description: Make images and videos in Slack with your PopNow credits.
+  background_color: "#352242"
+  long_description: >-
+    Mention @PopNow in a channel or use /popnow to create images and videos with your PopNow account.
+    The first time, PopNow asks you to Authorize your account. Every creation shows its price in credits
+    on a button first, and nothing is charged until you press it. Results come back in the same thread.
+    Same balance and same prices as popnow.ai.
+features:
+  bot_user:
+    display_name: PopNow
+    always_online: true
+  slash_commands:
+    - command: /popnow
+      url: https://bots.popnow.ai/slack/commands
+      description: Make images and videos with your PopNow credits
+      usage_hint: "image a fox in the snow · video … · balance"
+      should_escape: false
+oauth_config:
+  redirect_urls:
+    - https://bots.popnow.ai/slack/oauth
+  scopes:
+    bot:
+      - app_mentions:read
+      - chat:write
+      - commands
+      - files:write
+      - im:write
+settings:
+  event_subscriptions:
+    request_url: https://bots.popnow.ai/slack/events
+    bot_events:
+      - app_mention
+  interactivity:
+    is_enabled: true
+    request_url: https://bots.popnow.ai/slack/interactions
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
