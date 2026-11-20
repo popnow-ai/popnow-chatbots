@@ -27,6 +27,7 @@ oauth_config:
       - app_mentions:read
       - chat:write
       - commands
+      - files:read
       - files:write
       - im:write
 settings:

@@ -401,6 +401,9 @@ export function stubPlatforms(): { calls: PlatformCall[]; restore: () => void; f
       if (method === "oauth.v2.access") return reply({ ok: true, access_token: "xoxb-installed", team: { id: "T9" } });
       return reply({ ok: true });
     }
+    if (url.hostname === "files.slack.com" && url.pathname.startsWith("/files-pri/")) {
+      return new Response(PNG, { status: 200, headers: { "content-type": "image/png", "content-length": String(PNG.length) } });
+    }
     return new Response("ok", { status: 200 });
   }) as typeof fetch;
   return { calls, restore: () => (globalThis.fetch = real), failChannelPost };

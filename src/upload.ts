@@ -14,6 +14,24 @@ export interface ChatFile {
   name: string;
   contentType: string;
   size?: number;
+  /**
+   * A Slack file shared with the bot (url_private_download): downloaded with that workspace's bot
+   * token. The token is looked up at download time (never stored with the job) and only ever sent
+   * to files.slack.com.
+   */
+  slackTeam?: string;
+}
+
+/** Download headers for a file; the bot token goes only to Slack's own file host. */
+export type DownloadAuth = (file: ChatFile) => Promise<Record<string, string>>;
+
+export function isSlackFileUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && parsed.hostname === "files.slack.com";
+  } catch {
+    return false;
+  }
 }
 
 export function kindOf(contentType: string): "image" | "video" | "audio" | undefined {
@@ -29,9 +47,10 @@ async function envelope(response: Response): Promise<Record<string, unknown>> {
   return (body.data ?? {}) as Record<string, unknown>;
 }
 
-async function download(file: ChatFile): Promise<Uint8Array<ArrayBuffer>> {
+async function download(file: ChatFile, auth?: DownloadAuth): Promise<Uint8Array<ArrayBuffer>> {
   if (file.size !== undefined && file.size > MAX_UPLOAD_BYTES) throw new UploadTooLargeError();
-  const response = await fetch(file.url, { signal: AbortSignal.timeout(60_000) });
+  const headers = auth ? await auth(file) : {};
+  const response = await fetch(file.url, { headers, signal: AbortSignal.timeout(60_000) });
   if (!response.ok) throw new Error(`could not download ${file.name} (${response.status})`);
   const length = Number(response.headers.get("content-length") ?? "0");
   if (length > MAX_UPLOAD_BYTES) throw new UploadTooLargeError();
@@ -47,7 +66,7 @@ export class UploadTooLargeError extends Error {
   }
 }
 
-export async function uploadChatFiles(client: McpClient, files: readonly ChatFile[], note: string): Promise<string[]> {
+export async function uploadChatFiles(client: McpClient, files: readonly ChatFile[], note: string, auth?: DownloadAuth): Promise<string[]> {
   if (files.length === 0) return [];
   if (files.length > 10) throw new TypeError("at most 10 files at once");
   const kinds = [...new Set(files.map((file) => kindOf(file.contentType) ?? "image"))];
@@ -68,7 +87,7 @@ export async function uploadChatFiles(client: McpClient, files: readonly ChatFil
 
   const names: string[] = [];
   for (const file of files) {
-    const bytes = await download(file);
+    const bytes = await download(file, auth);
     const name = file.name.replace(/[^\w.\- ]+/g, "_").slice(0, 120) || "file";
     names.push(name);
     const ticket = await envelope(await post("/files", { contentType: file.contentType, bytes: bytes.length, name }));

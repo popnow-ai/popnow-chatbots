@@ -4,7 +4,8 @@ import { TITLES, type Plan } from "./commands.js";
 import { clock, sameUser, type DurableObjectState, type Env, type UserRef } from "./env.js";
 import { isDone, jobOf, num, SignInRequiredError, textOf, type JobFile, type McpClient, type McpToolResult } from "./mcp.js";
 import { surfaceFor, type SurfaceContext } from "./surfaces.js";
-import { uploadChatFiles, UploadTooLargeError } from "./upload.js";
+import { isSlackFileUrl, uploadChatFiles, UploadTooLargeError, type ChatFile } from "./upload.js";
+import { teamToken } from "./store.js";
 
 /**
  * One Durable Object per quote. It is the only place a job is started, so a button pressed twice
@@ -211,6 +212,12 @@ export class PopNowJob {
     }
   }
 
+  private async downloadAuth(file: ChatFile): Promise<Record<string, string>> {
+    if (!file.slackTeam || !isSlackFileUrl(file.url)) return {};
+    const token = await teamToken(this.env, file.slackTeam);
+    return token ? { authorization: `Bearer ${token}` } : {};
+  }
+
   private async show(record: JobRecord): Promise<void> {
     try {
       await surfaceFor(this.env, record.surface).showCard(cardOf(record), record.surface);
@@ -267,7 +274,7 @@ export class PopNowJob {
     if (!client) return;
     try {
       if (record.plan.file && record.plan.mediaKey) {
-        const [link] = await uploadChatFiles(client, [record.plan.file], "From PopNow chat");
+        const [link] = await uploadChatFiles(client, [record.plan.file], "From PopNow chat", (file) => this.downloadAuth(file));
         record.plan.args[record.plan.mediaKey] = link;
         delete record.plan.file;
         await this.save(record);

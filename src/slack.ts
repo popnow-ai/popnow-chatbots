@@ -7,6 +7,7 @@ import type { ClickReply, OpenRequest } from "./job.js";
 import { textOf, type JobFile } from "./mcp.js";
 import { fileName, readCapped, type SlackContext, type Surface, type SurfaceContext } from "./surfaces.js";
 import { firstTime, putQuote, readQuote, saveTeamToken, teamToken } from "./store.js";
+import { isSlackFileUrl, type ChatFile } from "./upload.js";
 
 /**
  * Slack adapter: it only acts when mentioned (or on /popnow),
@@ -16,7 +17,7 @@ import { firstTime, putQuote, readQuote, saveTeamToken, teamToken } from "./stor
  */
 
 export const SLACK_API = "https://slack.com/api";
-export const SLACK_SCOPES = "app_mentions:read,chat:write,commands,files:write,im:write";
+export const SLACK_SCOPES = "app_mentions:read,chat:write,commands,files:read,files:write,im:write";
 /** Bigger results are posted as links (the Worker holds a file in memory to upload it). */
 export const SLACK_UPLOAD_LIMIT = 50 * 1024 * 1024;
 const SIGNATURE_MAX_AGE_S = 5 * 60;
@@ -189,11 +190,44 @@ interface Asked {
   channel: string;
   threadTs?: string;
   responseUrl?: string;
+  /** The first file the person sent with this mention, if any. */
+  file?: ChatFile;
 }
+
+interface SlackFile {
+  url_private_download?: string;
+  url_private?: string;
+  name?: string;
+  mimetype?: string;
+  size?: number;
+}
+
+/** Only the files on the message that mentioned the bot; nothing else in the channel is read. */
+export function fileFromEvent(team: string, files: SlackFile[] | undefined): ChatFile | undefined {
+  const file = files?.[0];
+  const url = file?.url_private_download ?? file?.url_private;
+  if (!file || !url || !isSlackFileUrl(url)) return undefined;
+  return {
+    url,
+    name: file.name ?? "file",
+    contentType: file.mimetype ?? "application/octet-stream",
+    ...(file.size === undefined ? {} : { size: file.size }),
+    slackTeam: team,
+  };
+}
+
+const MEDIA_ACTIONS = ["edit", "animate", "effect", "remove-bg", "upscale"];
 
 /** Answers a command or mention. `say` replies only to the asker. */
 async function run(env: Env, text: string, asked: Asked, say: (text: string, blocks?: unknown[]) => Promise<void>): Promise<void> {
-  const { action, input } = parseText(text);
+  const { action, input } = parseText(text, Boolean(asked.file));
+  if (asked.file && !input.link) {
+    const okType = action === "upscale" ? /^(image|video)\//.test(asked.file.contentType) : asked.file.contentType.startsWith("image/");
+    if ((MEDIA_ACTIONS.includes(action) || action === "video") && !okType) {
+      return say(action === "upscale" ? "Attach a photo or a video." : "Attach a photo.");
+    }
+    if (MEDIA_ACTIONS.includes(action) || action === "video") input.file = asked.file;
+  }
   if (action === "help") return say(HELP_TEXT);
   if (action === "logout") {
     return say((await unlink(env, asked.ref)) ? "Disconnected from PopNow." : "You weren't connected.");
@@ -217,7 +251,7 @@ async function run(env: Env, text: string, asked: Asked, say: (text: string, blo
     plan = planFor(action as Action, input);
   } catch (error) {
     if (error instanceof PlanError) {
-      const hint = ["edit", "animate", "effect", "remove-bg", "upscale"].includes(action) && !input.link ? " Paste an image link (https:// or popnow://)." : "";
+      const hint = MEDIA_ACTIONS.includes(action) && !input.link && !input.file ? " Attach a photo, or paste an image link." : "";
       return say(`${error.message}${hint}`);
     }
     throw error;
@@ -244,6 +278,7 @@ interface MentionEvent {
   channel?: string;
   ts?: string;
   thread_ts?: string;
+  files?: SlackFile[];
 }
 
 export async function handleSlackEvents(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -259,7 +294,14 @@ export async function handleSlackEvents(request: Request, env: Env, ctx: Executi
   if (!(await firstTime(env, "slack", payload.event_id))) return ok();
   const team = payload.team_id;
   const thread = event.thread_ts ?? event.ts;
-  const asked: Asked = { ref: refOf("slack", team, event.user), team, channel: event.channel, ...(thread ? { threadTs: thread } : {}) };
+  const file = fileFromEvent(team, event.files);
+  const asked: Asked = {
+    ref: refOf("slack", team, event.user),
+    team,
+    channel: event.channel,
+    ...(thread ? { threadTs: thread } : {}),
+    ...(file ? { file } : {}),
+  };
   ctx.waitUntil(
     run(env, event.text ?? "", asked, (text, blocks) => ephemeralTo(env, team, event.channel as string, event.user as string, thread, text, blocks)).catch((error) =>
       console.error(`slack mention: ${error instanceof Error ? error.name : "error"}`),

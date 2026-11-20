@@ -11,7 +11,7 @@ Make images and videos in Discord and Slack with your PopNow credits. Same accou
 |---|---|---|
 | Start | `/popnow image …` and the other subcommands | Mention `@PopNow` in a channel or thread, or `/popnow …` |
 | Connect | First use replies, only to you, with **Connect PopNow** | First mention replies, only to you, with **Authorize** |
-| Create | `image`, `video`, `edit` (photo), `animate` (photo), `effect` (photo, effect names autocomplete), `remove-bg` (photo), `upscale` (photo or video) | `image …`, `video …`, `edit <image link> …`, `animate <image link>`, `effect <name> <image link>`, `remove-bg <image link>`, `upscale <link>`; plain text is an image |
+| Create | `image`, `video`, `edit` (photo), `animate` (photo), `effect` (photo, effect names autocomplete), `remove-bg` (photo), `upscale` (photo or video) | `image …`, `video …`, `edit …`, `animate`, `effect <name>`, `remove-bg`, `upscale`, each with a file attached to the mention or a pasted link. Plain text makes an image; a photo plus text edits it |
 | Price | A card with **Create · N credits** and **Cancel**. Nothing is charged until you press Create. Only you can press it | Same card, in the thread |
 | Result | Images attached; files over 25 MB as links | Uploaded into the same thread; files over 50 MB as links |
 | Account | `balance`, `creations`, `login`, `logout` | `balance`, `creations`, `login`, `logout`, `help` |
@@ -25,7 +25,7 @@ One Cloudflare Worker with two adapters (`src/discord.ts`, `src/slack.ts`), a KV
 - **Sign-in.** The Worker is an OAuth 2.1 public client of PopNow: discovery from `https://api.popnow.ai/.well-known/oauth-protected-resource/mcp`, dynamic registration with the redirect `https://bots.popnow.ai/oauth/callback` (the client id is kept in KV), authorization code with PKCE S256 and `resource=https://api.popnow.ai/mcp`. A **Connect** link works once and binds platform + server or workspace + user. Opening it shows a page with **Continue**; only that press (a POST) uses the link, so chat link previews can't. The callback checks `state` and `iss`.
 - **Tokens** are stored in KV encrypted with AES-GCM (key: the `TOKEN_KEY` secret; the KV key is bound in as additional data). They are never logged. A 401 refreshes once. `logout` revokes the refresh and access tokens at PopNow and deletes the binding.
 - **Calls** go to `https://api.popnow.ai/mcp` (Streamable HTTP; JSON and event-stream replies): `initialize`, `notifications/initialized`, `tools/call`. The tools are `estimate_cost`, `create_image`, `edit_image`, `create_video`, `apply_effect`, `remove_background`, `upscale`, `get_job`, `check_balance`, `list_my_creations`, `list_presets`, `request_upload` and `get_upload`.
-- **Files from Discord** are downloaded and put into an upload window (`request_upload` → `/console/v1/upload-sessions/<token>/files` → signed PUT without Authorization → commit → close → `get_upload`), then passed as `popnow://` links. Slack mentions take image links (https or popnow://), so the app needs no `files:read`.
+- **Files from Discord** are downloaded and put into an upload window (`request_upload` → `/console/v1/upload-sessions/<token>/files` → signed PUT without Authorization → commit → close → `get_upload`), then passed as `popnow://` links. Files sent with a Slack mention are downloaded from `files.slack.com` with the workspace's bot token and go through the same upload window. The signed upload address never gets any token. Pasted links (https or popnow://) keep working, and are the way to pass a file to `/popnow`, because Slack slash commands can't carry files.
 - **Quote, then start.** Each request gets a Durable Object named after its short quote id:
   1. It prices with `estimate_cost`, which is free and creates nothing, then shows the card.
   2. **Create** starts the tool with `max_credits` set to exactly the button price. The object runs one press at a time, so pressing twice still starts one job.
@@ -50,7 +50,8 @@ KV keys: `oauth:client`, `bind:*` (15 min), `state:*` (10 min), `link:<platform>
      ```
      Add `DISCORD_GUILD_ID=…` to register it in one server for testing.
 3. **Slack.** Create the app from `slack/manifest.yaml` at <https://api.slack.com/apps> and put the client id in `wrangler.toml` (`SLACK_CLIENT_ID`).
-   - Bot scopes: `app_mentions:read`, `chat:write`, `commands`, `files:write`, `im:write`.
+   - Bot scopes: `app_mentions:read`, `chat:write`, `commands`, `files:read`, `files:write`, `im:write`.
+   - `files:read` is used only to download the file a person sends together with their `@PopNow` mention. The app never lists or reads other files in a channel or workspace.
    - Workspaces install it from `https://bots.popnow.ai/slack/install`.
 4. **Secrets.** Set each with `npx wrangler secret put <NAME>`:
 

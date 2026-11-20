@@ -4,14 +4,16 @@ import { completeConnect, harness, slackRequest, type Harness, type PlatformCall
 
 type Json = Record<string, any>;
 
-function mention(user: string, text: string, eventId = `Ev${Math.random().toString(36).slice(2, 10)}`, thread?: string): string {
+function mention(user: string, text: string, eventId = `Ev${Math.random().toString(36).slice(2, 10)}`, thread?: string, files?: Json[]): string {
   return JSON.stringify({
     type: "event_callback",
     team_id: "T1",
     event_id: eventId,
-    event: { type: "app_mention", user, text: `<@UBOT> ${text}`, channel: "C1", ts: "1699.0001", ...(thread ? { thread_ts: thread } : {}) },
+    event: { type: "app_mention", user, text: `<@UBOT> ${text}`, channel: "C1", ts: "1699.0001", ...(thread ? { thread_ts: thread } : {}), ...(files ? { files } : {}) },
   });
 }
+
+const PHOTO = { name: "photo.png", mimetype: "image/png", size: 16, url_private_download: "https://files.slack.com/files-pri/T1-F1/download/photo.png" };
 
 function click(user: string, actionId: string, value: string): string {
   const payload = {
@@ -156,7 +158,40 @@ describe("Slack", () => {
   it("asks for an image link when edit has none", async () => {
     await bind();
     await post("/slack/events", mention("U1", "edit make it night", "Ev4"));
-    expect(slack("chat.postEphemeral").at(-1)?.json?.text).toBe("Add a photo. Paste an image link (https:// or popnow://).");
+    expect(slack("chat.postEphemeral").at(-1)?.json?.text).toBe("Add a photo. Attach a photo, or paste an image link.");
+  });
+
+  it("downloads a file sent with the mention with the bot token and uploads it without any token", async () => {
+    await bind();
+    await post("/slack/events", mention("U1", "make it night", "Ev7", undefined, [PHOTO]));
+    await h.jobs.runDue(1_000);
+    const download = h.platform.calls.find((c) => c.url === PHOTO.url_private_download);
+    expect(download?.auth).toBe("Bearer xoxb-env");
+    expect(h.fake.uploads).toEqual(["POST /files", "file photo.png:16:image/png", "PUT /put/f1:16", "POST /files/f1/commit", "POST /close"]);
+    expect(h.fake.uploads.join(" ")).not.toContain("AUTH-LEAK");
+    expect(h.fake.calls.find((c) => c.name === "estimate_cost")?.args).toEqual({
+      tool: "edit_image",
+      arguments: { prompt: "make it night", image_url: "popnow://f/abc" },
+    });
+    const [create] = buttons(slack("chat.postMessage").at(-1));
+    expect(create?.text?.text).toBe("Create · 48 credits");
+    // Nothing about the token is kept with the job.
+    expect(JSON.stringify([...h.jobs.objects.values()].map((o) => [...o.state.storage.values.values()]))).not.toContain("xoxb");
+  });
+
+  it("never sends the bot token to a file host other than Slack's", async () => {
+    await bind();
+    await post("/slack/events", mention("U1", "remove-bg", "Ev8", undefined, [{ ...PHOTO, url_private_download: "https://evil.example/x.png" }]));
+    await h.jobs.runDue(1_000);
+    expect(h.platform.calls.some((c) => c.url.startsWith("https://evil.example"))).toBe(false);
+    expect(slack("chat.postEphemeral").at(-1)?.json?.text).toBe("Add a photo. Attach a photo, or paste an image link.");
+  });
+
+  it("refuses a file that is not a photo", async () => {
+    await bind();
+    await post("/slack/events", mention("U1", "animate", "Ev9", undefined, [{ ...PHOTO, name: "a.pdf", mimetype: "application/pdf" }]));
+    expect(slack("chat.postEphemeral").at(-1)?.json?.text).toBe("Attach a photo.");
+    expect(h.fake.calls.filter((c) => c.name === "request_upload")).toHaveLength(0);
   });
 
   it("passes a pasted image link straight to the tool", async () => {
@@ -180,7 +215,7 @@ describe("Slack", () => {
     const start = await h.call(new Request("https://bots.popnow.ai/slack/install"));
     expect(start.status).toBe(302);
     const target = new URL(start.headers.get("location") as string);
-    expect(target.searchParams.get("scope")).toBe("app_mentions:read,chat:write,commands,files:write,im:write");
+    expect(target.searchParams.get("scope")).toBe("app_mentions:read,chat:write,commands,files:read,files:write,im:write");
     const state = target.searchParams.get("state") as string;
     const bad = await h.call(new Request(`https://bots.popnow.ai/slack/oauth?code=c&state=${"x".repeat(32)}`));
     expect(bad.status).toBe(400);

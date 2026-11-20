@@ -118,7 +118,7 @@ export function planFor(action: Action, input: CommandInput): Plan {
 }
 
 /** Slack text commands: "video a dog surfing", "edit <link> make it night", or just a prompt (an image). */
-export function parseText(text: string): { action: Action | "balance" | "creations" | "login" | "logout" | "help"; input: CommandInput } {
+export function parseText(text: string, hasFile = false): { action: Action | "balance" | "creations" | "login" | "logout" | "help"; input: CommandInput } {
   let rest = text.replace(/<@[A-Z0-9]+(\|[^>]*)?>/g, " ").trim();
   const word = rest.split(/\s+/)[0]?.toLowerCase() ?? "";
   const aliases: Record<string, Action | "balance" | "creations" | "login" | "logout" | "help"> = {
@@ -147,7 +147,7 @@ export function parseText(text: string): { action: Action | "balance" | "creatio
   } else if (rest) {
     input.prompt = rest.replace(/\s+/g, " ");
   }
-  return { action: action ?? (input.link ? "edit" : rest ? "image" : "help"), input };
+  return { action: action ?? (input.link || hasFile ? "edit" : rest ? "image" : "help"), input };
 }
 
 export const HELP_TEXT =
